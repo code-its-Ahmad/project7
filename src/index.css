@@ -1,0 +1,1123 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DESIGN TOKENS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+
+    --radius: 0.5rem;
+
+    /*
+     * Fixed-navbar clearance, in px.
+     *
+     * Consumed by `html { scroll-padding-top }` for native fragment jumps and
+     * read back by `src/lib/scrollTo.ts` via getComputedStyle for programmatic
+     * nav clicks. Four different hard-coded values (70 / 75 / 88 / 90) used to
+     * be scattered across the navbar, the command palette, the footer and this
+     * stylesheet, so headings landed behind the bar depending on which control
+     * the visitor used.
+     */
+    --nav-offset: 70px;
+
+    /* Scrollbar surfaces are tokenised so they follow the theme instead of
+       being hardcoded dark (which looked broken in light mode). */
+    --scrollbar-track: 210 40% 94%;
+    --scrollbar-thumb-from: 217 91% 60%;
+    --scrollbar-thumb-to: 258 90% 66%;
+  }
+
+  /* The bar grows slightly at md+, matching the navbar's own padding step. */
+  @media (min-width: 768px) {
+    :root {
+      --nav-offset: 90px;
+    }
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+
+    --scrollbar-track: 222 47% 11%;
+    --scrollbar-thumb-from: 217 91% 60%;
+    --scrollbar-thumb-to: 258 90% 66%;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   BASE ELEMENTS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@layer base {
+  * {
+    @apply border-border;
+    /* One place for tap-highlight suppression; it was previously declared in
+       three separate universal selectors. */
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html {
+    /* `scroll-behavior: smooth` is applied further down, gated behind a
+       reduced-motion query, rather than unconditionally here. */
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    scrollbar-gutter: stable;
+    /*
+     * Anchor scrolling must clear the fixed navigation bar. `--nav-offset` is
+     * the single source of truth: `src/lib/scrollTo.ts` reads the same custom
+     * property, so JS-driven nav clicks and native fragment/`:target` jumps can
+     * never land at different offsets (they previously used 70, 75, 88 and 90).
+     */
+    scroll-padding-top: var(--nav-offset);
+    /*
+     * Stops scroll chaining out of the document (Android pull-to-refresh firing
+     * mid-scroll) while leaving nested scrollers working normally.
+     */
+    overscroll-behavior-y: contain;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Plus Jakarta Sans', 'Outfit', system-ui, sans-serif;
+    /* `overflow-x: clip` prevents horizontal bleed without creating a scroll
+       container, so `position: sticky` children keep working — `hidden` breaks
+       them. */
+    overflow-x: clip;
+    min-height: 100dvh;
+  }
+
+  /* Safari < 16 and Firefox < 81 do not implement `clip`; fall back to `hidden`
+     there so those browsers still cannot scroll sideways. */
+  @supports not (overflow-x: clip) {
+    body {
+      overflow-x: hidden;
+    }
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
+    letter-spacing: -0.02em;
+    /* Long unbroken technical words used to overflow a 360px viewport. */
+    overflow-wrap: break-word;
+  }
+
+  /* Media should never be able to force a horizontal scrollbar. */
+  img,
+  svg,
+  video,
+  canvas {
+    max-width: 100%;
+  }
+
+  img,
+  video {
+    height: auto;
+  }
+
+  /* Placeholder colour was inheriting the input's text colour in dark mode,
+     rendering it nearly invisible. */
+  ::placeholder {
+    @apply text-muted-foreground;
+    opacity: 1;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   UTILITIES
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@layer utilities {
+  /*
+   * NOTE: `.transform-gpu`, `.rotateY-12`, `.rotateX-5` and `.translateZ-10`
+   * used to be defined here. `transform-gpu` is a *built-in Tailwind utility*,
+   * and redefining it as `transform: translate3d(0,0,0)` silently overwrote the
+   * transform on every element that combined it with `scale-*`, `rotate-*` or
+   * `translate-*`. The replacements below use non-colliding names.
+   */
+  .gpu-accel {
+    transform: translate3d(0, 0, 0);
+    backface-visibility: hidden;
+  }
+
+  .backface-hidden {
+    backface-visibility: hidden;
+  }
+
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+
+  .preserve-3d {
+    transform-style: preserve-3d;
+  }
+
+  /* Dynamic viewport units for mobile are provided natively by Tailwind 3.4
+     (`h-dvh`, `min-h-dvh`, `max-h-dvh`) so they are not redefined here. */
+
+  .overscroll-contain {
+    overscroll-behavior: contain;
+  }
+
+  /* Android navigation-bar / notch clearance. */
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .safe-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .safe-x {
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+  }
+
+  /* Fluid type. Lower bounds are sized for a 360px-wide screen. */
+  .text-responsive-xs {
+    font-size: clamp(0.75rem, 2vw, 0.875rem);
+  }
+  .text-responsive-sm {
+    font-size: clamp(0.8125rem, 2.4vw, 1rem);
+  }
+  .text-responsive-base {
+    font-size: clamp(0.875rem, 2.8vw, 1.125rem);
+  }
+  .text-responsive-lg {
+    font-size: clamp(1rem, 3.2vw, 1.25rem);
+  }
+  .text-responsive-xl {
+    font-size: clamp(1.125rem, 3.8vw, 1.5rem);
+  }
+  .text-responsive-2xl {
+    font-size: clamp(1.25rem, 4.6vw, 2rem);
+  }
+  .text-responsive-3xl {
+    font-size: clamp(1.5rem, 5.4vw, 2.5rem);
+  }
+  .text-responsive-4xl {
+    font-size: clamp(1.75rem, 6.4vw, 3rem);
+  }
+  .text-responsive-5xl {
+    font-size: clamp(2rem, 7.5vw, 4rem);
+  }
+  .text-responsive-6xl {
+    font-size: clamp(2.25rem, 9vw, 5rem);
+  }
+
+  /* Guards against long URLs / package names breaking the mobile layout. */
+  .break-anywhere {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .hover-glow {
+    transition:
+      box-shadow 0.3s ease,
+      transform 0.3s ease;
+  }
+
+  /* Hover effects are pointer-gated: on touch screens `:hover` sticks after a
+     tap, leaving elements stuck in their hover state. */
+  @media (hover: hover) and (pointer: fine) {
+    .hover-glow:hover {
+      box-shadow: 0 0 30px rgba(59, 130, 246, 0.6);
+      transform: translateY(-2px) scale(1.02);
+    }
+  }
+
+  .text-hologram {
+    background: linear-gradient(135deg, #00f0ff 0%, #3b82f6 50%, #a855f7 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    /* Fallback colour first so the text is never invisible if background-clip
+       is unsupported. */
+    color: #3b82f6;
+    -webkit-text-fill-color: transparent;
+  }
+
+  @supports not ((-webkit-background-clip: text) or (background-clip: text)) {
+    .text-hologram {
+      -webkit-text-fill-color: currentColor;
+    }
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   KEYFRAMES
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  33% {
+    transform: translateY(-15px) rotate(1deg);
+  }
+  66% {
+    transform: translateY(-10px) rotate(-1deg);
+  }
+}
+
+@keyframes glow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 20px rgba(59, 130, 246, 0.3),
+      0 0 40px rgba(59, 130, 246, 0.1);
+  }
+  50% {
+    box-shadow:
+      0 0 40px rgba(59, 130, 246, 0.6),
+      0 0 60px rgba(59, 130, 246, 0.4);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+@keyframes matrix {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(0px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.8);
+  }
+}
+
+/*
+ * `hologram` previously animated `filter: hue-rotate()` on an infinite loop.
+ * Animating a filter forces a full repaint of the layer every frame and was one
+ * of the single most expensive things on the page for a mobile GPU. It now
+ * animates only compositable properties.
+ */
+@keyframes hologram {
+  0%,
+  100% {
+    opacity: 0.85;
+    transform: translateY(0px);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes pulse-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.4);
+  }
+  50% {
+    box-shadow:
+      0 0 40px rgba(168, 85, 247, 0.8),
+      0 0 60px rgba(168, 85, 247, 0.4);
+  }
+}
+
+@keyframes slide-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(60px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-60px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(60px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fade-in-scale {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Animation classes are wrapped in `motion-safe` semantics via the
+   reduced-motion block at the end of this file. */
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+.animate-glow {
+  animation: glow 3s ease-in-out infinite alternate;
+}
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 3s linear infinite;
+}
+.animate-matrix {
+  animation: matrix 4s linear infinite;
+}
+.animate-hologram {
+  animation: hologram 5s ease-in-out infinite;
+}
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+.animate-slide-in-up {
+  animation: slide-in-up 0.6s ease-out both;
+}
+.animate-slide-in-left {
+  animation: slide-in-left 0.6s ease-out both;
+}
+.animate-slide-in-right {
+  animation: slide-in-right 0.6s ease-out both;
+}
+.animate-fade-in-scale {
+  animation: fade-in-scale 0.5s ease-out both;
+}
+
+.animate-delay-100 {
+  animation-delay: 0.1s;
+}
+.animate-delay-200 {
+  animation-delay: 0.2s;
+}
+.animate-delay-300 {
+  animation-delay: 0.3s;
+}
+.animate-delay-500 {
+  animation-delay: 0.5s;
+}
+.animate-delay-700 {
+  animation-delay: 0.7s;
+}
+.animate-delay-1000 {
+  animation-delay: 1s;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ADVANCED SHIMMER & SCROLL ANIMATION SYSTEM
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@keyframes shimmer-sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes glow-border {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes draw-line {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes magnetic-float {
+  0%, 100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  20% {
+    transform: translate(3px, -6px) rotate(0.5deg);
+  }
+  40% {
+    transform: translate(-4px, -3px) rotate(-0.5deg);
+  }
+  60% {
+    transform: translate(2px, -8px) rotate(0.3deg);
+  }
+  80% {
+    transform: translate(-3px, -5px) rotate(-0.3deg);
+  }
+}
+
+@keyframes text-reveal {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes border-spin {
+  from {
+    --border-angle: 0turn;
+  }
+  to {
+    --border-angle: 1turn;
+  }
+}
+
+/* ── Shimmer Skeleton Utilities ───────────────────────────────────────────── */
+
+.shimmer-base {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.75rem;
+}
+
+.shimmer-base::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.04) 20%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.04) 80%,
+    transparent 100%
+  );
+  animation: shimmer-sweep 1.8s ease-in-out infinite;
+}
+
+.dark .shimmer-base::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.03) 20%,
+    rgba(255, 255, 255, 0.06) 50%,
+    rgba(255, 255, 255, 0.03) 80%,
+    transparent 100%
+  );
+}
+
+:root:not(.dark) .shimmer-base::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(0, 0, 0, 0.03) 20%,
+    rgba(0, 0, 0, 0.06) 50%,
+    rgba(0, 0, 0, 0.03) 80%,
+    transparent 100%
+  );
+}
+
+.shimmer-block {
+  background: rgba(148, 163, 184, 0.08);
+}
+
+.dark .shimmer-block {
+  background: rgba(148, 163, 184, 0.06);
+}
+
+.shimmer-text {
+  height: 0.875rem;
+  border-radius: 0.375rem;
+}
+
+.shimmer-text-lg {
+  height: 1.5rem;
+  border-radius: 0.5rem;
+}
+
+.shimmer-avatar {
+  border-radius: 9999px;
+}
+
+/* ── Glow border utility ─────────────────────────────────────────────────── */
+
+.glow-border {
+  background: linear-gradient(
+    var(--border-angle, 0turn),
+    rgba(59, 130, 246, 0.4),
+    rgba(168, 85, 247, 0.4),
+    rgba(6, 182, 212, 0.4),
+    rgba(59, 130, 246, 0.4)
+  );
+  background-size: 300% 300%;
+  animation: glow-border 4s linear infinite;
+}
+
+/* ── Scroll reveal base (used as a JS animation target) ──────────────────── */
+
+.scroll-reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.scroll-reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.animate-magnetic-float {
+  animation: magnetic-float 8s ease-in-out infinite;
+}
+
+.animate-draw-line {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: draw-line 1.5s ease-out forwards;
+}
+
+.animate-text-reveal {
+  animation: text-reveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SCROLLBARS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--scrollbar-track));
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+    45deg,
+    hsl(var(--scrollbar-thumb-from)),
+    hsl(var(--scrollbar-thumb-to))
+  );
+  border-radius: 4px;
+}
+
+/* `transform` has no effect on a scrollbar pseudo-element; brightness does. */
+::-webkit-scrollbar-thumb:hover {
+  filter: brightness(1.2);
+}
+
+::-webkit-scrollbar-corner {
+  background: hsl(var(--scrollbar-track));
+}
+
+html {
+  scrollbar-color: hsl(var(--scrollbar-thumb-from)) hsl(var(--scrollbar-track));
+  scrollbar-width: thin;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.45);
+  border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.7);
+}
+
+/* Hide the scrollbar but keep the element scrollable (horizontal chip rows). */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ACCESSIBILITY
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Remove the default outline only when a visible alternative exists. */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/*
+ * Interactive targets meet the 44px minimum on touch devices.
+ *
+ * The previous version covered five selectors and only constrained
+ * `min-height`, so a 22x44 icon button still failed WCAG 2.5.5 on the
+ * horizontal axis, and links, `select`, `textarea` and the ARIA widget roles
+ * were not covered at all.
+ */
+@media (pointer: coarse) {
+  button,
+  a[role='button'],
+  [role='button'],
+  [role='link'],
+  [role='tab'],
+  [role='menuitem'],
+  [role='switch'],
+  [role='checkbox'],
+  [role='radio'],
+  input[type='button'],
+  input[type='submit'],
+  input[type='reset'],
+  input[type='checkbox'],
+  input[type='radio'],
+  select {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /*
+   * Text inputs only need the height — a 44px `min-width` on a full-bleed field
+   * is meaningless, and forcing it on a narrow inline field would break layout.
+   */
+  input[type='text'],
+  input[type='email'],
+  input[type='tel'],
+  input[type='url'],
+  input[type='search'],
+  input[type='number'],
+  input[type='password'],
+  textarea {
+    min-height: 44px;
+  }
+
+  /*
+   * Inline links inside prose must NOT be inflated — that would shred
+   * paragraph line boxes. They are handled by generous padding at the call
+   * site instead.
+   */
+
+  /* Opt-out for genuinely decorative or inline controls. */
+  .touch-target-auto {
+    min-height: 0;
+    min-width: 0;
+  }
+
+  /*
+   * Small icon buttons that sit inside a fixed-height container (a search
+   * field's clear button, a modal's close X) cannot grow without overhanging
+   * their parent. They keep their box and gain a transparent 44px hit area via
+   * a pseudo-element instead.
+   */
+  .touch-target-pseudo {
+    min-height: 0;
+    min-width: 0;
+    position: relative;
+  }
+  .touch-target-pseudo::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 44px;
+    height: 44px;
+    transform: translate(-50%, -50%);
+  }
+}
+
+button,
+a,
+[role='button'],
+.touch-manipulation {
+  /* Removes the 300ms tap delay without disabling pinch-zoom. */
+  touch-action: manipulation;
+}
+
+/*
+ * Hover affordances must never latch on a touch screen.
+ *
+ * On Android and iOS a tap leaves the element in `:hover` until the next tap
+ * elsewhere, so a card that lifts and glows on hover stays lifted and glowing
+ * after being tapped. `data-touch` is published on <html> by
+ * src/lib/deviceTier.ts; these rules neutralise the sticky states without
+ * needing every call site to branch.
+ */
+[data-touch='true'] .hover-glow:hover {
+  box-shadow: none;
+  transform: none;
+}
+
+@media (hover: none) {
+  /* Tailwind `hover:` variants are inert here anyway, but transitions that were
+     armed for hover would still fire on tap-and-hold. */
+  .no-touch-hover:hover {
+    transform: none !important;
+    box-shadow: none !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DEVICE-TIER PERFORMANCE BUDGETS
+   Driven by data-tier on <html>, set by src/lib/deviceTier.ts.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/*
+ * Low tier (budget Android such as the Infinix Hot 10):
+ * backdrop-filter is the single most expensive effect these GPUs encounter —
+ * each blurred layer forces an offscreen pass over the composited backdrop
+ * every frame. We swap them for flat translucent surfaces, which is visually
+ * close and costs nothing.
+ */
+[data-tier='low'] [class*='backdrop-blur'] {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+[data-tier='low'] [class*='backdrop-blur']:not([class*='bg-']) {
+  background-color: rgba(15, 23, 42, 0.82);
+}
+
+/* Large blur radii are reduced rather than removed — they read as soft glows. */
+[data-tier='low'] .blur-3xl {
+  filter: blur(28px);
+}
+[data-tier='low'] .blur-2xl {
+  filter: blur(20px);
+}
+
+/* Infinite decorative loops are the main idle battery drain. */
+[data-tier='low'] .animate-float,
+[data-tier='low'] .animate-glow,
+[data-tier='low'] .animate-shimmer,
+[data-tier='low'] .animate-hologram,
+[data-tier='low'] .animate-matrix,
+[data-tier='low'] .animate-pulse-glow,
+[data-tier='low'] .animate-ping,
+[data-tier='low'] .animate-bounce,
+[data-tier='low'] .animate-pulse,
+[data-tier='low'] .animate-spin:not([data-spinner]),
+[data-tier='low'] .animate-magnetic-float,
+[data-tier='low'] .glow-border {
+  animation: none !important;
+}
+
+/*
+ * `animate-pulse` was the one infinite loop missing from the list above, and it
+ * is by far the most widely used — the hero caret, the navbar status dot, the
+ * sound icon, the drawer chevron and several section badges all carry it. On a
+ * Helio G70 a dozen concurrent opacity keyframe loops is a measurable idle cost.
+ *
+ * `animate-spin` is exempted when marked `data-spinner`, because a loading
+ * spinner that does not spin reads as a frozen page.
+ */
+
+/* One-shot entrance animations are cheap; they stay on so content still lands
+   softly rather than snapping in. Only their delays are trimmed. */
+[data-tier='low'] .animate-delay-500,
+[data-tier='low'] .animate-delay-700,
+[data-tier='low'] .animate-delay-1000 {
+  animation-delay: 200ms;
+}
+
+/* Shimmer skeletons stay on low-tier — they're a UX necessity, but run slower. */
+[data-tier='low'] .shimmer-base::after {
+  animation-duration: 3s;
+}
+
+/* Multi-layer text/box shadows are cheap individually and costly in bulk. */
+[data-tier='low'] .drop-shadow-2xl,
+[data-tier='low'] .shadow-2xl {
+  --tw-shadow: 0 10px 20px -8px rgb(0 0 0 / 0.35);
+  /*
+   * `--tw-shadow-colored` must be overridden too: any element also carrying a
+   * coloured shadow utility (`shadow-blue-500/50`) resolves through that
+   * variable instead, which bypassed the budget entirely.
+   */
+  --tw-shadow-colored: 0 10px 20px -8px var(--tw-shadow-color);
+  filter: none;
+}
+
+/*
+ * Mid tier keeps blur but at a radius the GPU can sustain.
+ *
+ * Setting the `--tw-backdrop-blur` variable rather than the `backdrop-filter`
+ * longhand preserves Tailwind's composed filter chain — writing the longhand
+ * silently dropped any sibling `backdrop-saturate-*` / `backdrop-brightness-*`
+ * on the same element.
+ */
+[data-tier='mid'] .backdrop-blur-3xl,
+[data-tier='mid'] .backdrop-blur-2xl {
+  --tw-backdrop-blur: blur(12px);
+}
+
+/*
+ * Parallax and depth layers are opt-in via this class so a component can mark
+ * its decorative movement as "drop me first" without importing a hook.
+ */
+[data-tier='low'] .motion-decorative,
+[data-reduced-motion='true'] .motion-decorative {
+  transform: none !important;
+  animation: none !important;
+  transition: none !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MOTION PREFERENCES
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    /*
+     * Delays must be neutralised as well. Collapsing only the *duration* left
+     * `.animate-delay-1000` elements invisible for a full second before
+     * snapping in, which is worse than no animation at all.
+     */
+    animation-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .animate-float,
+  .animate-glow,
+  .animate-shimmer,
+  .animate-hologram,
+  .animate-matrix,
+  .animate-pulse-glow,
+  .animate-pulse,
+  .animate-ping,
+  .animate-bounce,
+  .animate-slide-in-up,
+  .animate-slide-in-left,
+  .animate-slide-in-right,
+  .animate-fade-in-scale,
+  .animate-magnetic-float,
+  .animate-draw-line,
+  .animate-text-reveal,
+  .glow-border {
+    animation: none !important;
+  }
+
+  .scroll-reveal {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  /*
+   * Swiper ships its own `!important` transitions. Because
+   * `.swiper-pagination-bullet` has higher specificity than the universal
+   * selector above, a 300ms `transition: all` (which animates `width`, forcing
+   * reflow) survived reduced motion. These re-assert it at matching specificity.
+   */
+  .swiper-pagination-bullet,
+  .swiper-slide,
+  .swiper-wrapper {
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+  }
+}
+
+/*
+ * Belt-and-braces mirror of the query above, driven by the `data-reduced-motion`
+ * attribute that deviceTier.ts already publishes. This exists so the same
+ * degradation can be forced programmatically (very weak hardware) even when the
+ * OS-level preference is unset.
+ */
+[data-reduced-motion='true'] .animate-float,
+[data-reduced-motion='true'] .animate-glow,
+[data-reduced-motion='true'] .animate-shimmer,
+[data-reduced-motion='true'] .animate-hologram,
+[data-reduced-motion='true'] .animate-matrix,
+[data-reduced-motion='true'] .animate-pulse-glow,
+[data-reduced-motion='true'] .animate-pulse,
+[data-reduced-motion='true'] .animate-ping,
+[data-reduced-motion='true'] .animate-bounce,
+[data-reduced-motion='true'] .animate-magnetic-float,
+[data-reduced-motion='true'] .glow-border {
+  animation: none !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SWIPER 3D COVERFLOW CUSTOM STYLING
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.swiper-pagination-bullets.swiper-pagination-horizontal {
+  bottom: 0px !important;
+}
+
+.swiper-pagination-bullet {
+  background: #94a3b8 !important;
+  opacity: 0.4 !important;
+  /*
+   * Narrowed from `transition: all`. `all` made the browser evaluate every
+   * animatable property on each slide change — including the `box-shadow` added
+   * by the active state — when only these four actually differ.
+   */
+  transition:
+    width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    background 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  width: 8px !important;
+  height: 8px !important;
+  /* 8px is far below any touch guideline; the hit area is widened invisibly. */
+  position: relative;
+}
+
+@media (pointer: coarse) {
+  .swiper-pagination-bullet::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 32px;
+    height: 32px;
+    transform: translate(-50%, -50%);
+  }
+}
+
+.dark .swiper-pagination-bullet {
+  background: #64748b !important;
+  opacity: 0.45 !important;
+}
+
+.swiper-pagination-bullet-active {
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6) !important;
+  opacity: 1 !important;
+  width: 26px !important;
+  border-radius: 9999px !important;
+  box-shadow: 0 0 14px rgba(59, 130, 246, 0.6) !important;
+}
+
+.swiper-btn-prev,
+.swiper-btn-next {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PRINT
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media print {
+  .no-print,
+  canvas {
+    display: none !important;
+  }
+
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  a::after {
+    content: ' (' attr(href) ')';
+    font-size: 0.8em;
+    word-break: break-all;
+  }
+}

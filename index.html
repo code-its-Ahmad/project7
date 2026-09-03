@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+    <title>Muhammad Ahmad | Senior Full Stack Engineer & AI Architect</title>
+    <meta name="description" content="Senior Full Stack Engineer, AI/ML Architect, and Mobile Developer crafting high-performance digital ecosystems, deep learning models, and responsive web platforms." />
+    <meta name="author" content="Muhammad Ahmad" />
+    <meta name="keywords" content="Muhammad Ahmad, Full Stack Developer, AI Engineer, Machine Learning, React, Next.js, Node.js, Python, Flutter, WebGL, Three.js, Portfolio" />
+
+    <!--
+      Google Fonts.
+
+      The stylesheet is fetched with `media="print"` and promoted to `all` on
+      load, so it no longer blocks first paint — previously this single
+      third-party <link> sat on the critical path with a DNS + TLS + 2 RTT cost
+      before the hero could render. The <noscript> copy keeps the fonts for
+      JS-disabled clients, and `display=swap` means text stays readable
+      throughout.
+
+      Weight *ranges* replace the twelve discrete instances that were requested
+      before. Both families are variable fonts, so `400..900` ships a single
+      file covering every weight the site actually uses (verified: 400, 500,
+      600, 700, 800, 900) instead of one @font-face per weight. Typography is
+      unchanged; only the transfer is smaller.
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400..900&family=Plus+Jakarta+Sans:wght@400..800&display=swap"
+      media="print"
+      onload="this.media='all'"
+    />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@400..900&family=Plus+Jakarta+Sans:wght@400..800&display=swap"
+      />
+    </noscript>
+
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="Muhammad Ahmad | Senior Full Stack Engineer & AI Architect" />
+    <meta property="og:description" content="Explore high-impact production software, 3D WebGL cosmos, AI/ML systems, and full-stack platforms by Muhammad Ahmad." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/assets/profile.png" />
+
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Muhammad Ahmad | Senior Full Stack Engineer" />
+    <meta name="twitter:description" content="Senior Full Stack Engineer & AI Architect Portfolio." />
+    <meta name="twitter:image" content="/assets/profile.png" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+  </head>
+
+  <!--
+    `overflow-x-hidden` was removed from this class list. It lives in Tailwind's
+    `utilities` layer, so it beat the `overflow-x: clip` declared on `body` in
+    index.css (`base` layer) — and `overflow-x: hidden` forces `overflow-y` to
+    compute to `auto`, turning <body> into a scroll container and breaking every
+    `position: sticky` descendant. The `clip` rule (with a `hidden` fallback for
+    Safari < 16) now applies as intended.
+  -->
+  <body class="antialiased selection:bg-blue-500/20 selection:text-blue-400">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
