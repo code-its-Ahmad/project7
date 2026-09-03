@@ -113,14 +113,12 @@ const Hero = () => {
 
       {/* Layered Gradient Overlays with Parallax */}
       <div
-        className={`absolute inset-0 bg-gradient-to-b from-transparent via-black/50 to-black/90 z-10 pointer-events-none transition-opacity duration-300 ${
-          theme === 'dark' ? 'opacity-90' : 'opacity-65'
-        }`}
+        className={`absolute inset-0 bg-gradient-to-b from-transparent via-black/50 to-black/90 z-10 pointer-events-none transition-opacity duration-300 ${theme === 'dark' ? 'opacity-90' : 'opacity-65'
+          }`}
       />
       <div
-        className={`absolute inset-0 bg-gradient-to-r from-blue-900/20 via-transparent to-purple-900/20 z-10 pointer-events-none transition-opacity duration-300 ${
-          theme === 'dark' ? 'opacity-100' : 'opacity-70'
-        }`}
+        className={`absolute inset-0 bg-gradient-to-r from-blue-900/20 via-transparent to-purple-900/20 z-10 pointer-events-none transition-opacity duration-300 ${theme === 'dark' ? 'opacity-100' : 'opacity-70'
+          }`}
       />
 
       {/* Floating Animated Ambient Glows with Scroll Parallax */}
