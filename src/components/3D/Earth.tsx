@@ -1,7 +1,44 @@
-import React, { Suspense, useRef, useEffect, useState } from 'react';
+import React, { Suspense, useRef, useEffect, useState, Component, type ReactNode } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, useGLTF, Stars } from '@react-three/drei';
 import * as THREE from 'three';
+
+// ─── Error Boundary ───────────────────────────────────────────────────────────
+interface ErrorBoundaryProps {
+  children: ReactNode;
+  fallback: (error: Error, reset: () => void) => ReactNode;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class ThreeErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.warn('3D Earth Canvas caught error:', error.message, errorInfo);
+  }
+
+  resetError = () => {
+    this.setState({ hasError: false, error: null });
+  };
+
+  render() {
+    if (this.state.hasError && this.state.error) {
+      return this.props.fallback(this.state.error, this.resetError);
+    }
+    return this.props.children;
+  }
+}
 
 // ─── Planet Mesh ─────────────────────────────────────────────────────────────
 function PlanetModel({ scale = 2.5 }: { scale?: number }) {
@@ -27,6 +64,12 @@ function PlanetModel({ scale = 2.5 }: { scale?: number }) {
       />
     </group>
   );
+}
+
+try {
+  useGLTF.preload('/planet/scene.gltf');
+} catch {
+  // Ignore preload error
 }
 
 // ─── Ambient Star Particles ────────────────────────────────────────────────
@@ -85,7 +128,6 @@ const EarthCanvas: React.FC<EarthCanvasProps> = ({ scale, className = '' }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [planetScale, setPlanetScale] = useState(scale ?? 2.4);
   const [isVisible, setIsVisible] = useState(true);
-  const [hasError, setHasError] = useState(false);
   const isMobile = typeof window !== 'undefined' ? window.innerWidth < 768 : false;
 
   useEffect(() => {
@@ -118,18 +160,25 @@ const EarthCanvas: React.FC<EarthCanvasProps> = ({ scale, className = '' }) => {
     };
   }, [scale]);
 
-  if (hasError) {
-    return (
+  const renderFallback = (_error: Error, reset: () => void) => (
+    <div
+      className={`w-full h-full flex flex-col items-center justify-center p-6 bg-gradient-to-br from-blue-950/60 to-slate-950/80 rounded-3xl border border-blue-500/20 text-center ${className}`}
+      style={{ minHeight: 220 }}
+    >
       <div
-        className={`w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-950/60 to-slate-950/80 rounded-3xl ${className}`}
+        className="w-20 h-20 rounded-full border-4 border-blue-500/40 border-t-blue-400 animate-spin shadow-2xl shadow-blue-500/20 mb-3"
+        style={{ animation: 'spin 8s linear infinite' }}
+      />
+      <span className="text-xs font-semibold text-blue-300">Global Interactive Orbit</span>
+      <button
+        onClick={reset}
+        type="button"
+        className="mt-2 text-[10px] text-blue-400 underline hover:text-blue-300"
       >
-        <div
-          className="w-24 h-24 rounded-full border-4 border-blue-500/40 border-t-blue-400 animate-spin shadow-2xl shadow-blue-500/20"
-          style={{ animation: 'spin 8s linear infinite' }}
-        />
-      </div>
-    );
-  }
+        Retry 3D Earth
+      </button>
+    </div>
+  );
 
   return (
     <div
@@ -138,40 +187,41 @@ const EarthCanvas: React.FC<EarthCanvasProps> = ({ scale, className = '' }) => {
       style={{ minHeight: 220 }}
     >
       {isVisible && (
-        <Canvas
-          frameloop="always"
-          dpr={[1, isMobile ? 1.2 : 1.5]}
-          gl={{
-            preserveDrawingBuffer: false,
-            antialias: false,
-            alpha: true,
-            powerPreference: 'high-performance',
-          }}
-          camera={{
-            fov: 45,
-            near: 0.1,
-            far: 200,
-            position: [0, 0, isMobile ? 6 : 5],
-          }}
-          onError={() => setHasError(true)}
-          style={{ width: '100%', height: '100%', touchAction: 'pan-y' }}
-        >
-          <SpaceEnvironment isMobile={isMobile} />
-          <Suspense fallback={<PlanetFallback />}>
-            <PlanetModel scale={planetScale} />
-          </Suspense>
-          <OrbitControls
-            autoRotate={false}
-            enablePan={false}
-            enableZoom={false}
-            enableRotate={true}
-            maxPolarAngle={Math.PI / 1.5}
-            minPolarAngle={Math.PI / 3}
-            enableDamping={true}
-            dampingFactor={0.06}
-            rotateSpeed={0.4}
-          />
-        </Canvas>
+        <ThreeErrorBoundary fallback={renderFallback}>
+          <Canvas
+            frameloop="always"
+            dpr={[1, isMobile ? 1.2 : 1.5]}
+            gl={{
+              preserveDrawingBuffer: false,
+              antialias: false,
+              alpha: true,
+              powerPreference: 'high-performance',
+            }}
+            camera={{
+              fov: 45,
+              near: 0.1,
+              far: 200,
+              position: [0, 0, isMobile ? 6 : 5],
+            }}
+            style={{ width: '100%', height: '100%', touchAction: 'pan-y' }}
+          >
+            <SpaceEnvironment isMobile={isMobile} />
+            <Suspense fallback={<PlanetFallback />}>
+              <PlanetModel scale={planetScale} />
+            </Suspense>
+            <OrbitControls
+              autoRotate={false}
+              enablePan={false}
+              enableZoom={false}
+              enableRotate={true}
+              maxPolarAngle={Math.PI / 1.5}
+              minPolarAngle={Math.PI / 3}
+              enableDamping={true}
+              dampingFactor={0.06}
+              rotateSpeed={0.4}
+            />
+          </Canvas>
+        </ThreeErrorBoundary>
       )}
     </div>
   );

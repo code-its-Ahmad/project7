@@ -1,8 +1,46 @@
-import React, { useEffect, useState, useRef, Suspense } from 'react';
+import React, { useEffect, useState, useRef, Suspense, Component, type ReactNode } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 
+// ─── Error Boundary ───────────────────────────────────────────────────────────
+interface ErrorBoundaryProps {
+  children: ReactNode;
+  fallback: (error: Error, reset: () => void) => ReactNode;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class ThreeErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.warn('3D Computers Canvas caught error:', error.message, errorInfo);
+  }
+
+  resetError = () => {
+    this.setState({ hasError: false, error: null });
+  };
+
+  render() {
+    if (this.state.hasError && this.state.error) {
+      return this.props.fallback(this.state.error, this.resetError);
+    }
+    return this.props.children;
+  }
+}
+
+// ─── 3D Model Component ───────────────────────────────────────────────────────
 const Computers: React.FC<{ isMobile: boolean; isTablet: boolean }> = ({ isMobile, isTablet }) => {
   const { scene, animations } = useGLTF('/man_working/scene.gltf');
   const mixerRef = useRef<THREE.AnimationMixer | null>(null);
@@ -54,7 +92,14 @@ const Computers: React.FC<{ isMobile: boolean; isTablet: boolean }> = ({ isMobil
   );
 };
 
-// Lightweight Fallback
+// Preload the model asset
+try {
+  useGLTF.preload('/man_working/scene.gltf');
+} catch {
+  // Ignore preloading errors in non-browser or test environments
+}
+
+// ─── Lightweight Suspense Fallback ───────────────────────────────────────────
 const Fallback3D = () => (
   <mesh position={[0, 0, 0]}>
     <sphereGeometry args={[1, 16, 16]} />
@@ -62,12 +107,33 @@ const Fallback3D = () => (
   </mesh>
 );
 
+// ─── Graceful UI Fallback (if 3D asset fails to fetch) ─────────────────────────
+const FallbackCard: React.FC<{ reset: () => void }> = ({ reset }) => (
+  <div className="w-full h-full flex flex-col items-center justify-center p-4 bg-gradient-to-br from-blue-950/30 via-slate-900/40 to-indigo-950/30 rounded-2xl border border-blue-500/20 text-center select-none">
+    <div className="relative mb-2">
+      <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center shadow-lg shadow-blue-500/10">
+        <span className="text-2xl animate-pulse">💻</span>
+      </div>
+      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-blue-400 animate-ping" />
+    </div>
+    <span className="text-xs font-bold text-gray-200 tracking-wide">Developer Workspace</span>
+    <span className="text-[10px] text-gray-400 mt-0.5">Full Stack & AI Engineering</span>
+    <button
+      onClick={reset}
+      type="button"
+      className="mt-2.5 px-3 py-1 rounded-lg bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 text-blue-400 text-[10px] font-medium transition-all hover:scale-105 active:scale-95"
+    >
+      Retry 3D View
+    </button>
+  </div>
+);
+
+// ─── Main Computers Canvas ───────────────────────────────────────────────────
 const ComputersCanvas = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
-  const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
     const checkViewport = () => {
@@ -96,40 +162,33 @@ const ComputersCanvas = () => {
     };
   }, []);
 
-  if (hasError) {
-    return (
-      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-950/40 to-slate-900/60 rounded-2xl">
-        <div className="text-3xl animate-bounce">💻</div>
-      </div>
-    );
-  }
-
   return (
     <div ref={containerRef} className="w-full h-full transform-gpu">
       {isVisible && (
-        <Canvas
-          frameloop="always"
-          dpr={[1, isMobile ? 1.2 : 1.5]}
-          camera={{ position: [18, 3, 5], fov: 28 }}
-          gl={{
-            preserveDrawingBuffer: false,
-            powerPreference: 'high-performance',
-            antialias: false,
-          }}
-          onError={() => setHasError(true)}
-          style={{ width: '100%', height: '100%', touchAction: 'pan-y' }}
-        >
-          <OrbitControls
-            enablePan={false}
-            enableZoom={false}
-            maxPolarAngle={Math.PI / 2}
-            minPolarAngle={Math.PI / 2}
-            rotateSpeed={0.5}
-          />
-          <Suspense fallback={<Fallback3D />}>
-            <Computers isMobile={isMobile} isTablet={isTablet} />
-          </Suspense>
-        </Canvas>
+        <ThreeErrorBoundary fallback={(_error, reset) => <FallbackCard reset={reset} />}>
+          <Canvas
+            frameloop="always"
+            dpr={[1, isMobile ? 1.2 : 1.5]}
+            camera={{ position: [18, 3, 5], fov: 28 }}
+            gl={{
+              preserveDrawingBuffer: false,
+              powerPreference: 'high-performance',
+              antialias: false,
+            }}
+            style={{ width: '100%', height: '100%', touchAction: 'pan-y' }}
+          >
+            <OrbitControls
+              enablePan={false}
+              enableZoom={false}
+              maxPolarAngle={Math.PI / 2}
+              minPolarAngle={Math.PI / 2}
+              rotateSpeed={0.5}
+            />
+            <Suspense fallback={<Fallback3D />}>
+              <Computers isMobile={isMobile} isTablet={isTablet} />
+            </Suspense>
+          </Canvas>
+        </ThreeErrorBoundary>
       )}
     </div>
   );
