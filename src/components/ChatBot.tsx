@@ -597,16 +597,15 @@ const ChatInputArea = memo(({
   };
 
   return (
-    <div className="p-2.5 sm:p-3.5 bg-white dark:bg-gray-900 border-t border-gray-200/80 dark:border-gray-800/80 flex items-center gap-1.5 sm:gap-2 shrink-0">
+    <div className="p-2.5 sm:p-3.5 bg-white dark:bg-gray-900 border-t border-gray-200/80 dark:border-gray-800/80 flex items-center gap-1.5 sm:gap-2 shrink-0" style={{ touchAction: 'manipulation' }}>
       <button
         onClick={toggleVoice}
         title={isListening ? 'Stop Listening' : 'Voice Input'}
         type="button"
-        className={`p-2.5 sm:p-3 rounded-2xl transition-all flex items-center justify-center shrink-0 cursor-pointer ${
-          isListening
+        className={`p-2.5 sm:p-3 rounded-2xl transition-all flex items-center justify-center shrink-0 cursor-pointer ${isListening
             ? 'bg-red-500 text-white animate-pulse shadow-lg shadow-red-500/30'
             : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-200 dark:hover:bg-gray-700'
-        }`}
+          }`}
         aria-label="Voice Input"
       >
         {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
@@ -623,24 +622,24 @@ const ChatInputArea = memo(({
           isListening
             ? 'Listening to your voice...'
             : conversationState === 'collecting_client_type'
-            ? 'Type Company or Individual...'
-            : conversationState === 'collecting_company_name'
-            ? 'Enter company name...'
-            : conversationState === 'collecting_name'
-            ? 'Enter your name...'
-            : conversationState === 'collecting_position_title'
-            ? 'Enter desired role or position...'
-            : conversationState === 'collecting_project_type'
-            ? 'Enter project type...'
-            : conversationState === 'collecting_budget'
-            ? 'Enter budget range (e.g. $1,500)...'
-            : conversationState === 'collecting_timeline'
-            ? 'Enter timeline (e.g. 1 month)...'
-            : conversationState === 'collecting_requirements'
-            ? 'Brief requirements...'
-            : conversationState === 'collecting_contact'
-            ? 'Enter your contact email...'
-            : 'Ask about skills, projects, pricing, or hire...'
+              ? 'Type Company or Individual...'
+              : conversationState === 'collecting_company_name'
+                ? 'Enter company name...'
+                : conversationState === 'collecting_name'
+                  ? 'Enter your name...'
+                  : conversationState === 'collecting_position_title'
+                    ? 'Enter desired role or position...'
+                    : conversationState === 'collecting_project_type'
+                      ? 'Enter project type...'
+                      : conversationState === 'collecting_budget'
+                        ? 'Enter budget range (e.g. $1,500)...'
+                        : conversationState === 'collecting_timeline'
+                          ? 'Enter timeline (e.g. 1 month)...'
+                          : conversationState === 'collecting_requirements'
+                            ? 'Brief requirements...'
+                            : conversationState === 'collecting_contact'
+                              ? 'Enter your contact email...'
+                              : 'Ask about skills, projects, pricing, or hire...'
         }
         className="flex-1 px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm bg-gray-100/90 dark:bg-gray-800/90 border border-gray-200 dark:border-gray-700 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-all"
       />
@@ -734,6 +733,7 @@ const ChatBot = ({ theme: propTheme }: { theme?: 'light' | 'dark' }) => {
   const speechQueueRef = useRef<SpeechQueueItem[]>([]);
   const isSpeakingRef = useRef(false);
   const hasSpokenWelcomeRef = useRef(false);
+  const handleBotResponseRef = useRef<((text: string) => Promise<void>) | null>(null);
 
   // Synchronize localStorage
   useEffect(() => {
@@ -744,31 +744,49 @@ const ChatBot = ({ theme: propTheme }: { theme?: 'light' | 'dark' }) => {
     } catch { }
   }, [messages, conversationState, projectDetails]);
 
-  // Responsive device check
+  // Responsive device check (debounced to prevent jank on budget devices)
   useEffect(() => {
+    let debounceTimer: ReturnType<typeof setTimeout>;
     const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        setIsMobile(window.innerWidth < 768);
+      }, 150);
     };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize, { passive: true });
+    return () => {
+      clearTimeout(debounceTimer);
+      window.removeEventListener('resize', handleResize);
+    };
   }, []);
 
   // Visual viewport resize handler for Infinix, Samsung, Pixel Android & iOS soft keyboards
   useEffect(() => {
     if (typeof window === 'undefined' || !window.visualViewport) return;
 
+    let rafId: number;
     const handleVisualViewportChange = () => {
-      if (isOpen) {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        if (!isOpen) return;
+        // Set CSS custom property for visual viewport height (handles on-screen keyboard)
+        const vh = window.visualViewport!.height;
+        document.documentElement.style.setProperty('--chat-vh', `${vh}px`);
         setTimeout(() => {
           messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-        }, 100);
-      }
+        }, 80);
+      });
     };
 
+    handleVisualViewportChange();
     window.visualViewport.addEventListener('resize', handleVisualViewportChange);
+    window.visualViewport.addEventListener('scroll', handleVisualViewportChange);
     return () => {
+      cancelAnimationFrame(rafId);
       window.visualViewport?.removeEventListener('resize', handleVisualViewportChange);
+      window.visualViewport?.removeEventListener('scroll', handleVisualViewportChange);
+      document.documentElement.style.removeProperty('--chat-vh');
     };
   }, [isOpen]);
 
@@ -1215,6 +1233,9 @@ const ChatBot = ({ theme: propTheme }: { theme?: 'light' | 'dark' }) => {
     }
   };
 
+  // Keep latest handleBotResponse in ref to stabilize handleSendMessage identity
+  handleBotResponseRef.current = handleBotResponse;
+
   /* =========================================================================
      SEND MESSAGE HANDLER
      ========================================================================= */
@@ -1235,12 +1256,12 @@ const ChatBot = ({ theme: propTheme }: { theme?: 'light' | 'dark' }) => {
 
     setTimeout(async () => {
       try {
-        await handleBotResponse(textToSend.trim());
+        await handleBotResponseRef.current?.(textToSend.trim());
       } finally {
         setIsTyping(false);
       }
     }, 550 + Math.random() * 250);
-  }, [isTyping, isSubmitting, playClick, handleBotResponse]);
+  }, [isTyping, isSubmitting, playClick]);
 
   /* =========================================================================
      GLOBAL EVENT LISTENERS (Open from Command Palette, Navigation, Hero, etc.)
@@ -1372,7 +1393,11 @@ const ChatBot = ({ theme: propTheme }: { theme?: 'light' | 'dark' }) => {
           aria-label={isOpen ? 'Close AI 3D Assistant' : 'Open AI 3D Assistant'}
         >
           {/* Animated Glow Aura */}
-          <span className="absolute -inset-1.5 rounded-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 opacity-70 blur-md group-hover:opacity-100 transition duration-300 animate-pulse pointer-events-none" />
+          <span
+            className={`absolute -inset-1.5 rounded-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 opacity-70 blur-md group-hover:opacity-100 transition duration-300 pointer-events-none ${
+              !isOpen ? 'animate-pulse' : ''
+            }`}
+          />
 
           <div className="relative flex items-center justify-center">
             {isOpen ? <X className="w-5 h-5 sm:w-6 sm:h-6" /> : <Bot className="w-5 h-5 sm:w-6 sm:h-6" />}
@@ -1422,14 +1447,15 @@ const ChatBot = ({ theme: propTheme }: { theme?: 'light' | 'dark' }) => {
             initial="hidden"
             animate="visible"
             exit="exit"
+            style={{ willChange: 'transform, opacity' }}
             className={`fixed z-[95] transition-all duration-300 flex flex-col overflow-hidden text-gray-900 dark:text-white bg-white/95 dark:bg-gray-950/95 backdrop-blur-2xl border border-gray-200/80 dark:border-gray-800/80 shadow-2xl ${
               isMobile
-                ? 'inset-x-2 bottom-2 top-auto h-[90dvh] max-h-[820px] rounded-3xl pb-[env(safe-area-inset-bottom,0px)]'
+                ? 'inset-x-2 bottom-2 top-auto h-[90dvh] max-h-[var(--chat-vh,820px)] rounded-3xl pb-[env(safe-area-inset-bottom,0px)]'
                 : isFullscreen
-                ? 'inset-4 sm:inset-8 rounded-3xl'
-                : isMinimized
-                ? 'bottom-20 right-4 sm:right-6 w-[340px] sm:w-[380px] h-auto rounded-2xl shadow-xl'
-                : 'bottom-20 right-4 sm:right-6 w-[calc(100vw-32px)] sm:w-[540px] md:w-[820px] lg:w-[920px] h-[86vh] max-h-[720px] rounded-3xl'
+                  ? 'inset-4 sm:inset-8 rounded-3xl'
+                  : isMinimized
+                    ? 'bottom-20 right-4 sm:right-6 w-[340px] sm:w-[380px] h-auto rounded-2xl shadow-xl'
+                    : 'bottom-20 right-4 sm:right-6 w-[calc(100vw-32px)] sm:w-[540px] md:w-[820px] lg:w-[920px] h-[86vh] max-h-[720px] rounded-3xl'
             }`}
             role="dialog"
             aria-label="AI 3D Assistant Window"
@@ -1443,8 +1469,8 @@ const ChatBot = ({ theme: propTheme }: { theme?: 'light' | 'dark' }) => {
 
             {/* Header */}
             <div className="px-3.5 sm:px-4 py-2.5 sm:py-3 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-700 text-white flex items-center justify-between shadow-md shrink-0 select-none">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div className="relative">
+              <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                <div className="relative shrink-0">
                   <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 shadow-inner">
                     <Bot className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                   </div>
@@ -1453,31 +1479,31 @@ const ChatBot = ({ theme: propTheme }: { theme?: 'light' | 'dark' }) => {
                   )}
                 </div>
 
-                <div>
-                  <div className="flex items-center gap-1.5 font-bold text-xs sm:text-sm md:text-base">
-                    <span>Muhammad's 3D AI</span>
-                    <span className="px-1.5 py-0.5 text-[8px] sm:text-[9px] font-extrabold uppercase rounded-full bg-emerald-400/20 text-emerald-300 border border-emerald-400/30">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5 font-bold text-xs sm:text-sm md:text-base truncate">
+                    <span className="truncate">Muhammad's 3D AI</span>
+                    <span className="px-1.5 py-0.5 text-[8px] sm:text-[9px] font-extrabold uppercase rounded-full bg-emerald-400/20 text-emerald-300 border border-emerald-400/30 shrink-0">
                       Live
                     </span>
-                    <span className="hidden sm:inline-block px-1.5 py-0.5 text-[9px] font-semibold rounded-md bg-white/15 text-blue-100">
+                    <span className="hidden sm:inline-block px-1.5 py-0.5 text-[9px] font-semibold rounded-md bg-white/15 text-blue-100 shrink-0">
                       v3.2 Turbo
                     </span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] text-blue-100/90 font-medium">
+                  <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] text-blue-100/90 font-medium truncate">
                     {isSpeaking ? (
-                      <span className="flex items-center gap-1 text-emerald-200">
-                        <Headphones className="w-3 h-3 animate-pulse" />
+                      <span className="flex items-center gap-1 text-emerald-200 truncate">
+                        <Headphones className="w-3 h-3 animate-pulse shrink-0" />
                         Speaking & Animating...
                       </span>
                     ) : (
-                      <span>Full Stack & AI Engineer Assistant</span>
+                      <span className="truncate">Full Stack & AI Engineer Assistant</span>
                     )}
                   </div>
                 </div>
               </div>
 
               {/* Action Buttons in Header */}
-              <div className="flex items-center gap-1 sm:gap-1.5">
+              <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
                 <button
                   onClick={() => {
                     playClick();
@@ -1490,10 +1516,8 @@ const ChatBot = ({ theme: propTheme }: { theme?: 'light' | 'dark' }) => {
                   }}
                   title={isTtsEnabled ? 'Mute AI Voice' : 'Enable AI Voice'}
                   type="button"
-                  className={`p-1.5 sm:p-2 rounded-xl transition-all cursor-pointer ${
-                    isTtsEnabled
-                      ? 'bg-white/25 text-white shadow-inner'
-                      : 'text-blue-200 hover:bg-white/20'
+                  className={`p-2 sm:p-2 min-w-[36px] min-h-[36px] sm:min-w-0 sm:min-h-0 flex items-center justify-center rounded-xl transition-all cursor-pointer touch-manipulation ${
+                    isTtsEnabled ? 'bg-white/25 text-white shadow-inner' : 'text-blue-200 hover:bg-white/20'
                   }`}
                   aria-label="Toggle Voice"
                 >
@@ -1504,7 +1528,7 @@ const ChatBot = ({ theme: propTheme }: { theme?: 'light' | 'dark' }) => {
                   onClick={handleResetChat}
                   title="Restart Conversation"
                   type="button"
-                  className="p-1.5 sm:p-2 rounded-xl text-blue-200 hover:text-white hover:bg-white/20 transition-all cursor-pointer"
+                  className="p-2 sm:p-2 min-w-[36px] min-h-[36px] sm:min-w-0 sm:min-h-0 flex items-center justify-center rounded-xl text-blue-200 hover:text-white hover:bg-white/20 transition-all cursor-pointer touch-manipulation"
                   aria-label="Restart Conversation"
                 >
                   <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -1515,7 +1539,7 @@ const ChatBot = ({ theme: propTheme }: { theme?: 'light' | 'dark' }) => {
                   target="_blank"
                   rel="noopener noreferrer"
                   title="WhatsApp Muhammad"
-                  className="p-1.5 sm:p-2 rounded-xl text-blue-200 hover:text-white hover:bg-white/20 transition-all"
+                  className="p-2 sm:p-2 min-w-[36px] min-h-[36px] sm:min-w-0 sm:min-h-0 flex items-center justify-center rounded-xl text-blue-200 hover:text-white hover:bg-white/20 transition-all touch-manipulation"
                   aria-label="WhatsApp Muhammad"
                 >
                   <Phone className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -1559,7 +1583,7 @@ const ChatBot = ({ theme: propTheme }: { theme?: 'light' | 'dark' }) => {
                   }}
                   title="Close Assistant"
                   type="button"
-                  className="p-1.5 sm:p-2 rounded-xl text-blue-200 hover:text-white hover:bg-white/20 transition-all cursor-pointer"
+                  className="p-2 sm:p-2 min-w-[36px] min-h-[36px] sm:min-w-0 sm:min-h-0 flex items-center justify-center rounded-xl text-blue-200 hover:text-white hover:bg-white/20 transition-all cursor-pointer touch-manipulation"
                   aria-label="Close Assistant"
                 >
                   <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -1569,7 +1593,7 @@ const ChatBot = ({ theme: propTheme }: { theme?: 'light' | 'dark' }) => {
 
             {/* Modal Body */}
             {!isMinimized && (
-              <div className="flex-1 flex flex-col md:flex-row overflow-hidden relative">
+              <div className="flex-1 min-h-0 flex flex-col md:flex-row overflow-hidden relative">
                 {/* 3D AVATAR STAGE */}
                 <div
                   className={`relative transition-all duration-300 ${
@@ -1577,13 +1601,14 @@ const ChatBot = ({ theme: propTheme }: { theme?: 'light' | 'dark' }) => {
                       ? mobileAvatarMode === 'hidden'
                         ? 'hidden'
                         : mobileAvatarMode === 'compact'
-                        ? 'h-[95px] w-full shrink-0'
-                        : 'h-[175px] w-full shrink-0'
+                          ? 'h-[95px] w-full shrink-0'
+                          : 'h-[175px] w-full shrink-0'
                       : 'w-[40%] lg:w-[38%] h-full shrink-0'
                   } bg-gradient-to-b from-blue-50/50 via-indigo-50/20 to-purple-50/30 dark:from-gray-900/80 dark:via-gray-950/70 dark:to-gray-950/90 border-b md:border-b-0 md:border-r border-gray-200/70 dark:border-gray-800/70 flex flex-col items-center justify-center overflow-hidden`}
                 >
                   <div className="w-full h-full relative cursor-grab active:cursor-grabbing select-none">
                     <Canvas
+                      frameloop={isMobile && mobileAvatarMode === 'hidden' ? 'never' : 'always'}
                       camera={{ position: [0, 0.4, 3.8], fov: isMobile ? 54 : 48 }}
                       gl={{
                         antialias: !isMobile,
@@ -1591,7 +1616,7 @@ const ChatBot = ({ theme: propTheme }: { theme?: 'light' | 'dark' }) => {
                         alpha: true,
                         precision: isMobile ? 'mediump' : 'highp',
                       }}
-                      dpr={isMobile ? [1, 1.25] : [1, 1.5]}
+                      dpr={isMobile ? 1 : [1, 1.5]}
                       performance={{ min: 0.5 }}
                     >
                       <ambientLight intensity={theme === 'dark' ? 0.75 : 0.95} />
@@ -1648,18 +1673,18 @@ const ChatBot = ({ theme: propTheme }: { theme?: 'light' | 'dark' }) => {
                           mobileAvatarMode === 'compact'
                             ? 'expanded'
                             : mobileAvatarMode === 'expanded'
-                            ? 'hidden'
-                            : 'compact'
+                              ? 'hidden'
+                              : 'compact'
                         )
                       }
                       type="button"
-                      className="absolute top-2 right-2 px-2 py-0.5 rounded-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-md text-[10px] font-semibold text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 shadow-sm cursor-pointer"
+                      className="absolute top-2 right-2 px-2 py-0.5 rounded-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-md text-[10px] font-semibold text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 shadow-sm cursor-pointer touch-manipulation"
                     >
                       {mobileAvatarMode === 'compact'
                         ? '3D Full ⤢'
                         : mobileAvatarMode === 'expanded'
-                        ? 'Hide 3D ✕'
-                        : 'Show 3D ▾'}
+                          ? 'Hide 3D ✕'
+                          : 'Show 3D ▾'}
                     </button>
                   )}
                 </div>
@@ -1668,7 +1693,7 @@ const ChatBot = ({ theme: propTheme }: { theme?: 'light' | 'dark' }) => {
                   <button
                     onClick={() => setMobileAvatarMode('compact')}
                     type="button"
-                    className="w-full py-1 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-900 text-blue-600 dark:text-blue-400 text-[11px] font-bold border-b border-gray-200 dark:border-gray-800 text-center flex items-center justify-center gap-1 cursor-pointer"
+                    className="w-full py-1 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-900 text-blue-600 dark:text-blue-400 text-[11px] font-bold border-b border-gray-200 dark:border-gray-800 text-center flex items-center justify-center gap-1 cursor-pointer touch-manipulation"
                   >
                     <Bot className="w-3.5 h-3.5" />
                     <span>Show 3D Avatar Stage ▾</span>
@@ -1676,18 +1701,18 @@ const ChatBot = ({ theme: propTheme }: { theme?: 'light' | 'dark' }) => {
                 )}
 
                 {/* CONVERSATION STREAM */}
-                <div className="flex-1 flex flex-col h-full overflow-hidden bg-gray-50/60 dark:bg-gray-950/60">
+                <div className="flex-1 min-h-0 flex flex-col h-full overflow-hidden bg-gray-50/60 dark:bg-gray-950/60">
                   {stepProgress && (
-                    <div className="px-3.5 py-2 bg-indigo-50/90 dark:bg-indigo-950/60 border-b border-indigo-100 dark:border-indigo-900/60 flex items-center justify-between text-xs shrink-0">
-                      <div className="flex items-center gap-2">
-                        <div className="w-5 h-5 rounded-full bg-indigo-600 text-white font-bold text-[10px] flex items-center justify-center">
+                    <div className="px-3.5 py-2 bg-indigo-50/90 dark:bg-indigo-950/60 border-b border-indigo-100 dark:border-indigo-900/60 flex items-center justify-between text-xs shrink-0 gap-2 min-w-0">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-5 h-5 rounded-full bg-indigo-600 text-white font-bold text-[10px] flex items-center justify-center shrink-0">
                           {stepProgress.current}
                         </div>
-                        <div>
-                          <span className="font-bold text-indigo-900 dark:text-indigo-200">
+                        <div className="truncate min-w-0">
+                          <span className="font-bold text-indigo-900 dark:text-indigo-200 truncate">
                             Guided Inquiry: {stepProgress.label}
                           </span>
-                          <span className="text-[10px] text-indigo-600/80 dark:text-indigo-400 ml-1.5">
+                          <span className="text-[10px] text-indigo-600/80 dark:text-indigo-400 ml-1.5 shrink-0">
                             (Step {stepProgress.current} of {stepProgress.total})
                           </span>
                         </div>
@@ -1695,7 +1720,7 @@ const ChatBot = ({ theme: propTheme }: { theme?: 'light' | 'dark' }) => {
                       <button
                         onClick={handleResetChat}
                         type="button"
-                        className="text-[11px] font-semibold text-red-600 dark:text-red-400 hover:underline cursor-pointer"
+                        className="text-[11px] font-semibold text-red-600 dark:text-red-400 hover:underline cursor-pointer shrink-0 touch-manipulation"
                       >
                         Cancel
                       </button>
@@ -1703,7 +1728,13 @@ const ChatBot = ({ theme: propTheme }: { theme?: 'light' | 'dark' }) => {
                   )}
 
                   {/* Messages Feed */}
-                  <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3.5 custom-chat-scrollbar overscroll-contain">
+                  <div
+                    className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-4 space-y-3.5 custom-chat-scrollbar overscroll-contain"
+                    style={{
+                      WebkitOverflowScrolling: 'touch',
+                      touchAction: 'pan-y',
+                    }}
+                  >
                     {messages.map((msg) => (
                       <motion.div
                         key={msg.id}
@@ -1724,15 +1755,16 @@ const ChatBot = ({ theme: propTheme }: { theme?: 'light' | 'dark' }) => {
                           {msg.isUser ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
                         </div>
 
-                        <div className="space-y-2 max-w-[85%] sm:max-w-[80%]">
+                        <div className="space-y-2 max-w-[85%] sm:max-w-[80%] min-w-0 break-words [overflow-wrap:anywhere]">
                           <div
                             className={`p-3 sm:p-3.5 rounded-2xl transition-all shadow-sm ${
                               msg.isUser
                                 ? 'bg-gradient-to-tr from-blue-600 to-indigo-600 text-white rounded-tr-none shadow-blue-500/20'
                                 : msg.isError
-                                ? 'bg-red-50 dark:bg-red-950/60 text-red-700 dark:text-red-300 rounded-tl-none border border-red-200 dark:border-red-800/60'
-                                : 'bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 rounded-tl-none border border-gray-200/80 dark:border-gray-800/80'
+                                  ? 'bg-red-50 dark:bg-red-950/60 text-red-700 dark:text-red-300 rounded-tl-none border border-red-200 dark:border-red-800/60'
+                                  : 'bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 rounded-tl-none border border-gray-200/80 dark:border-gray-800/80'
                             }`}
+                            style={{ willChange: 'transform' }}
                           >
                             <RichMessageContent content={msg.text} isUser={msg.isUser} />
 
@@ -1743,10 +1775,10 @@ const ChatBot = ({ theme: propTheme }: { theme?: 'light' | 'dark' }) => {
                                     key={i}
                                     onClick={() => handleActionClick(act)}
                                     type="button"
-                                    className="px-2.5 py-1 rounded-xl text-[11px] font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-sm flex items-center gap-1 transition-all active:scale-95 cursor-pointer"
+                                    className="px-2.5 py-1 rounded-xl text-[11px] font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-sm flex items-center gap-1 transition-all active:scale-95 cursor-pointer whitespace-nowrap touch-manipulation"
                                   >
-                                    <span>{act.label}</span>
-                                    <ArrowRight className="w-3 h-3" />
+                                    <span className="truncate max-w-[200px]">{act.label}</span>
+                                    <ArrowRight className="w-3 h-3 shrink-0" />
                                   </button>
                                 ))}
                               </div>
@@ -1760,7 +1792,7 @@ const ChatBot = ({ theme: propTheme }: { theme?: 'light' | 'dark' }) => {
                                   key={i}
                                   onClick={() => handleSendMessage(sug)}
                                   type="button"
-                                  className="px-2.5 py-1 rounded-xl text-[11px] font-semibold bg-blue-50/90 dark:bg-blue-950/70 hover:bg-blue-100 dark:hover:bg-blue-900/80 text-blue-600 dark:text-blue-300 border border-blue-200/70 dark:border-blue-800/60 transition-all hover:scale-[1.02] active:scale-[0.98] text-left cursor-pointer shadow-xs"
+                                  className="px-2.5 py-1 rounded-xl text-[11px] font-semibold bg-blue-50/90 dark:bg-blue-950/70 hover:bg-blue-100 dark:hover:bg-blue-900/80 text-blue-600 dark:text-blue-300 border border-blue-200/70 dark:border-blue-800/60 transition-all hover:scale-[1.02] active:scale-[0.98] text-left cursor-pointer shadow-xs break-words touch-manipulation"
                                 >
                                   {sug}
                                 </button>
@@ -1782,7 +1814,7 @@ const ChatBot = ({ theme: propTheme }: { theme?: 'light' | 'dark' }) => {
                                 <button
                                   onClick={() => handleCopyMessage(msg.id, msg.text)}
                                   type="button"
-                                  className="hover:text-blue-500 transition-colors flex items-center gap-0.5 cursor-pointer"
+                                  className="hover:text-blue-500 transition-colors flex items-center gap-0.5 cursor-pointer touch-manipulation"
                                   title="Copy text"
                                 >
                                   {copiedMessageId === msg.id ? (
@@ -1802,7 +1834,7 @@ const ChatBot = ({ theme: propTheme }: { theme?: 'light' | 'dark' }) => {
                                 <button
                                   onClick={() => speakMessage(msg.text, false)}
                                   type="button"
-                                  className="hover:text-blue-500 transition-colors flex items-center gap-0.5 cursor-pointer"
+                                  className="hover:text-blue-500 transition-colors flex items-center gap-0.5 cursor-pointer touch-manipulation"
                                   title="Listen to message"
                                 >
                                   <Volume2 className="w-3 h-3" />
@@ -1861,6 +1893,11 @@ const ChatBot = ({ theme: propTheme }: { theme?: 'light' | 'dark' }) => {
       </AnimatePresence>
 
       <style>{`
+        .custom-chat-scrollbar {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(99, 102, 241, 0.3) transparent;
+          scroll-behavior: smooth;
+        }
         .custom-chat-scrollbar::-webkit-scrollbar {
           width: 5px;
         }
