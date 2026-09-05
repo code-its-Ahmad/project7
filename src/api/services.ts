@@ -366,15 +366,71 @@ export const testimonialsAPI = {
     const res = await supabase.from('testimonials').select('*').order('id', { ascending: false });
     return { testimonials: (unwrap(res, 'Loading testimonials') ?? []) as Testimonial[] };
   },
-  submit: (data: Partial<Testimonial>) =>
-    callFunction<{ id: number; message: string }>('submit-testimonial', {
-      name: data.name,
-      role: data.role,
-      company: data.company,
-      text: data.text,
-      rating: data.rating,
-      project_name: data.project_name,
-    }),
+  submit: async (data: Partial<Testimonial>): Promise<{ id?: number; message: string }> => {
+    try {
+      const res = await callFunction<{ id: number; message: string }>('submit-testimonial', {
+        name: data.name,
+        role: data.role,
+        company: data.company,
+        text: data.text,
+        rating: data.rating,
+        avatar: data.avatar,
+        project_name: data.project_name,
+      });
+      return res;
+    } catch (err: any) {
+      console.warn('Edge function submission error, attempting resilient direct insertion:', err);
+      // Fallback: direct insert with pending status
+      const { data: inserted, error } = await supabase
+        .from('testimonials')
+        .insert({
+          name: data.name || 'Anonymous',
+          role: data.role || 'Client',
+          company: data.company || '',
+          text: data.text || '',
+          rating: data.rating || 5,
+          avatar: data.avatar || null,
+          project_name: data.project_name || null,
+          status: 'pending',
+          is_featured: false,
+        })
+        .select('id')
+        .single();
+
+      if (error) {
+        throw new Error(err?.message || error.message || 'Failed to submit feedback.');
+      }
+
+      return {
+        id: inserted?.id,
+        message: 'Thank you! Your testimonial was submitted and will appear once reviewed.',
+      };
+    }
+  },
+  create: async (data: Partial<Testimonial>) => {
+    const { id: _ignored, created_at: _created, ...row } = data;
+    const res = await supabase
+      .from('testimonials')
+      .insert({
+        name: row.name || 'Anonymous',
+        role: row.role || 'Client',
+        company: row.company || '',
+        text: row.text || '',
+        rating: row.rating || 5,
+        project_name: row.project_name || null,
+        avatar: row.avatar || null,
+        status: row.status || 'approved',
+        is_featured: row.is_featured ?? false,
+      })
+      .select('*')
+      .single();
+    return { testimonial: unwrap(res, 'Creating testimonial') as Testimonial };
+  },
+  update: async (id: number, data: Partial<Testimonial>) => {
+    const { id: _ignored, created_at: _created, ...patch } = data;
+    const res = await supabase.from('testimonials').update(patch).eq('id', id).select('*').single();
+    return { testimonial: unwrap(res, 'Updating testimonial') as Testimonial };
+  },
   updateStatus: async (id: number, status: 'pending' | 'approved' | 'rejected') => {
     const res = await supabase.from('testimonials').update({ status }).eq('id', id).select('*').single();
     return { testimonial: unwrap(res, 'Updating testimonial') as Testimonial };
