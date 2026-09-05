@@ -1101,6 +1101,52 @@ a,
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   3D PARALLAX GLASSMORPHIC CAROUSEL STYLES & PERFORMANCE
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.perspective-1200 {
+  perspective: 1200px;
+}
+
+.perspective-1500 {
+  perspective: 1500px;
+}
+
+.glass-card-3d {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.dark .glass-card-3d {
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Infinix Hot 10 (360px) and low power tier optimizations */
+@media (max-width: 400px) {
+  .glass-card-3d {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+}
+
+[data-tier='low'] .glass-card-3d {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    PRINT
    ═══════════════════════════════════════════════════════════════════════════ */
 
