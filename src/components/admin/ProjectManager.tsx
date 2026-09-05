@@ -90,7 +90,7 @@ const ProjectManager: React.FC = () => {
       setFormData((prev) => ({ ...prev, image: res.url }));
       toast.success('Cover image uploaded successfully!');
     } catch (err: any) {
-      toast.error(err?.response?.data?.error || 'Failed to upload image.');
+      toast.error(err?.message || 'Failed to upload image.');
     } finally {
       setIsUploading(false);
     }
@@ -140,7 +140,7 @@ const ProjectManager: React.FC = () => {
       setIsModalOpen(false);
       refetch();
     } catch (err: any) {
-      toast.error(err?.response?.data?.error || 'Failed to save project.');
+      toast.error(err?.message || 'Failed to save project.');
     }
   };
 
