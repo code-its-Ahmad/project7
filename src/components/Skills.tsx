@@ -314,11 +314,10 @@ const Skills: React.FC = () => {
                   playWhoosh();
                   setViewMode('cosmos');
                 }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black transition-all ${
-                  viewMode === 'cosmos'
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black transition-all ${viewMode === 'cosmos'
                     ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg shadow-cyan-500/30 scale-105'
                     : 'text-gray-400 hover:text-white'
-                }`}
+                  }`}
               >
                 <Globe className="w-3.5 h-3.5" />
                 <span>3D Cosmos</span>
@@ -329,11 +328,10 @@ const Skills: React.FC = () => {
                   playWhoosh();
                   setViewMode('grid');
                 }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black transition-all ${
-                  viewMode === 'grid'
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black transition-all ${viewMode === 'grid'
                     ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/30 scale-105'
                     : 'text-gray-400 hover:text-white'
-                }`}
+                  }`}
               >
                 <LayoutGrid className="w-3.5 h-3.5" />
                 <span>3D Cards</span>
@@ -344,11 +342,10 @@ const Skills: React.FC = () => {
                   playWhoosh();
                   setViewMode('matrix');
                 }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black transition-all ${
-                  viewMode === 'matrix'
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black transition-all ${viewMode === 'matrix'
                     ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-500/30 scale-105'
                     : 'text-gray-400 hover:text-white'
-                }`}
+                  }`}
               >
                 <BarChart3 className="w-3.5 h-3.5" />
                 <span>Matrix</span>
@@ -406,17 +403,15 @@ const Skills: React.FC = () => {
                   key={cat}
                   onClick={() => handleCategorySelect(cat)}
                   onMouseEnter={playHover}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
-                    isSelected
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${isSelected
                       ? 'bg-cyan-500 text-black font-black shadow-lg shadow-cyan-500/40 scale-105'
                       : 'bg-black/50 text-gray-300 hover:text-white hover:bg-white/10 border border-white/10'
-                  }`}
+                    }`}
                 >
                   <span>{cat}</span>
                   <span
-                    className={`px-1.5 py-0.2 rounded-md text-[9px] font-black ${
-                      isSelected ? 'bg-black/25 text-black' : 'bg-white/10 text-gray-400'
-                    }`}
+                    className={`px-1.5 py-0.2 rounded-md text-[9px] font-black ${isSelected ? 'bg-black/25 text-black' : 'bg-white/10 text-gray-400'
+                      }`}
                   >
                     {count}
                   </span>
@@ -443,11 +438,10 @@ const Skills: React.FC = () => {
                   playClick();
                   setSelectedTier(tier.id as TierOption);
                 }}
-                className={`px-2.5 py-0.5 rounded-lg text-[10px] font-medium transition-all ${
-                  selectedTier === tier.id
+                className={`px-2.5 py-0.5 rounded-lg text-[10px] font-medium transition-all ${selectedTier === tier.id
                     ? 'bg-white/20 text-white border border-white/30 shadow-sm'
                     : 'text-gray-400 hover:text-gray-200 hover:bg-white/5'
-                }`}
+                  }`}
               >
                 {tier.label}
               </button>
