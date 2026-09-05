@@ -265,11 +265,10 @@ const Navigation: React.FC<NavigationProps> = ({ onOpenCommandPalette, onOpenTer
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        className={`fixed top-3 right-3 left-3 z-50 transition-all duration-500 mx-auto max-w-[1440px] ${
-          isOpen
+        className={`fixed top-3 right-3 left-3 z-50 transition-all duration-500 mx-auto max-w-[1440px] ${isOpen
             ? 'bg-gray-50/95 dark:bg-gray-950/95 shadow-xl shadow-blue-500/20'
             : 'bg-gray-50/90 dark:bg-gray-950/90 shadow-lg shadow-blue-500/15'
-        } rounded-2xl border border-blue-500/25 overflow-visible`}
+          } rounded-2xl border border-blue-500/25 overflow-visible`}
       >
         <div className="flex items-center justify-between p-2 max-w-7xl mx-auto">
           {/* Logo / Brand with 360° spin avatar hover & pulsating gradient text */}
@@ -358,11 +357,10 @@ const Navigation: React.FC<NavigationProps> = ({ onOpenCommandPalette, onOpenTer
                     whileTap={{ scale: 0.85, rotateY: 0 }}
                     onClick={() => scrollToSection(item.id)}
                     onMouseEnter={playHover}
-                    className={`relative flex items-center gap-1.5 px-2.5 xl:px-3 py-1.5 text-xs xl:text-sm font-medium rounded-full transition-all duration-400 whitespace-nowrap focus:outline-none ${
-                      isActive
+                    className={`relative flex items-center gap-1.5 px-2.5 xl:px-3 py-1.5 text-xs xl:text-sm font-medium rounded-full transition-all duration-400 whitespace-nowrap focus:outline-none ${isActive
                         ? 'text-blue-400 bg-blue-400/25 border border-blue-400/35'
                         : 'text-gray-900 dark:text-white hover:text-blue-400'
-                    }`}
+                      }`}
                     style={{ transformStyle: 'preserve-3d' }}
                     aria-current={isActive ? 'page' : undefined}
                   >
@@ -420,11 +418,10 @@ const Navigation: React.FC<NavigationProps> = ({ onOpenCommandPalette, onOpenTer
               }}
               onMouseEnter={playHover}
               title={isMuted ? 'Unmute Sound Effects' : 'Mute Sound Effects'}
-              className={`p-1.5 sm:p-2 rounded-xl border transition-colors duration-200 ${
-                isMuted
+              className={`p-1.5 sm:p-2 rounded-xl border transition-colors duration-200 ${isMuted
                   ? 'bg-gray-100/70 dark:bg-gray-800/60 border-transparent text-gray-400'
                   : 'bg-blue-500/10 dark:bg-blue-400/10 border-blue-500/20 text-blue-600 dark:text-blue-400 shadow-sm shadow-blue-500/10'
-              }`}
+                }`}
               whileHover={{
                 scale: 1.1,
                 rotate: isMuted ? 0 : 8,
@@ -464,15 +461,13 @@ const Navigation: React.FC<NavigationProps> = ({ onOpenCommandPalette, onOpenTer
               >
                 <Menu
                   size={22}
-                  className={`absolute inset-0 m-auto transition-all duration-500 ${
-                    isOpen ? 'opacity-0 scale-0' : 'opacity-100 scale-100'
-                  } text-blue-400`}
+                  className={`absolute inset-0 m-auto transition-all duration-500 ${isOpen ? 'opacity-0 scale-0' : 'opacity-100 scale-100'
+                    } text-blue-400`}
                 />
                 <X
                   size={22}
-                  className={`absolute inset-0 m-auto transition-all duration-500 ${
-                    isOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-0'
-                  } text-purple-400`}
+                  className={`absolute inset-0 m-auto transition-all duration-500 ${isOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-0'
+                    } text-purple-400`}
                 />
               </motion.div>
             </motion.button>
@@ -590,7 +585,10 @@ const Navigation: React.FC<NavigationProps> = ({ onOpenCommandPalette, onOpenTer
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1.5">
+                      {/* Theme Toggle inside drawer */}
+                      <ThemeToggle size="sm" />
+
                       {/* Audio Mute button inside drawer header */}
                       <motion.button
                         onClick={() => {
@@ -599,11 +597,10 @@ const Navigation: React.FC<NavigationProps> = ({ onOpenCommandPalette, onOpenTer
                           toggleMute();
                         }}
                         title={isMuted ? 'Unmute Sound' : 'Mute Sound'}
-                        className={`p-1.5 rounded-lg border transition-colors ${
-                          isMuted
+                        className={`p-1.5 rounded-lg border transition-colors ${isMuted
                             ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 border-transparent'
                             : 'bg-blue-500/10 text-blue-500 border-blue-500/30'
-                        }`}
+                          }`}
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.9 }}
                       >
@@ -646,11 +643,10 @@ const Navigation: React.FC<NavigationProps> = ({ onOpenCommandPalette, onOpenTer
                           whileTap={{ scale: 0.95, rotateY: 0, zIndex: 10 }}
                           onClick={() => scrollToSection(item.id)}
                           onMouseEnter={playHover}
-                          className={`flex items-center gap-3 w-full text-left py-2.5 px-3.5 text-sm font-medium rounded-xl transition-all duration-300 relative ${
-                            isActive
+                          className={`flex items-center gap-3 w-full text-left py-2.5 px-3.5 text-sm font-medium rounded-xl transition-all duration-300 relative ${isActive
                               ? 'text-blue-500 dark:text-blue-400 bg-blue-500/15 dark:bg-blue-400/15 border border-blue-500/35 font-semibold'
                               : 'text-gray-700 dark:text-gray-200 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-gray-100/50 dark:hover:bg-gray-800/40'
-                          }`}
+                            }`}
                           style={{
                             transformStyle: 'preserve-3d',
                             boxShadow: isActive ? '0 4px 12px rgba(59, 130, 246, 0.15)' : 'none',
