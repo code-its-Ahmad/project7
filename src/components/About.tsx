@@ -39,6 +39,7 @@ import {
   Bot,
   Eye,
   Server,
+  Smartphone,
 } from 'lucide-react';
 import ComputersCanvas from './3D/Computers';
 import { usePortfolio } from '../context/PortfolioContext';
@@ -445,7 +446,7 @@ const TimelineEntry = memo(function TimelineEntry({
 TimelineEntry.displayName = 'TimelineEntry';
 
 const About = () => {
-  const { profile } = usePortfolio();
+  const { profile, skills, experiences } = usePortfolio();
   const { playClick, playHover, playWhoosh } = useSound();
   const shouldReduceMotion = useReducedMotion();
   const { isMobile, isLowPower } = useDeviceProfile();
@@ -478,6 +479,101 @@ const About = () => {
     [0, 1],
     shouldReduceMotion || isLowPower ? [0, 0] : [30, -45],
   );
+
+  // Dynamic Fun Stats derived from live Supabase Profile
+  const dynamicStats: FunStat[] = useMemo(() => {
+    const parseStat = (val?: string | null, fallbackNum = 0, fallbackSuffix = '+') => {
+      if (!val) return { end: fallbackNum, suffix: fallbackSuffix };
+      const num = parseInt(val.replace(/[^0-9]/g, ''), 10);
+      const suffix = val.replace(/[0-9]/g, '').trim() || fallbackSuffix;
+      return { end: Number.isNaN(num) ? fallbackNum : num, suffix };
+    };
+
+    const pProj = parseStat(profile?.projects_completed, 50, '+');
+    const pYrs = parseStat(profile?.years_experience, 3, '+');
+    const pCli = parseStat(profile?.happy_clients, 100, '+');
+    const pSat = parseStat(profile?.satisfaction_rate, 99, '%');
+
+    return [
+      { end: pProj.end, suffix: pProj.suffix, label: 'Production Projects', icon: Rocket, color: 'text-blue-500' },
+      { end: pYrs.end, suffix: pYrs.suffix, label: 'Years Experience', icon: Clock, color: 'text-purple-500' },
+      { end: pCli.end, suffix: pCli.suffix, label: 'Global Clients', icon: Globe, color: 'text-emerald-500' },
+      { end: pSat.end, suffix: pSat.suffix, label: 'Client Satisfaction', icon: Star, color: 'text-amber-500' },
+    ];
+  }, [profile]);
+
+  // Dynamic Tech Categories derived from live Supabase Skills
+  const dynamicTechCategories: TechCategory[] = useMemo(() => {
+    if (!skills || skills.length === 0) return TECH_CATEGORIES;
+
+    const categoriesMap: Record<string, { name: string; level: number }[]> = {};
+    skills.forEach((s) => {
+      const cat = s.category || 'Core Technologies';
+      if (!categoriesMap[cat]) categoriesMap[cat] = [];
+      categoriesMap[cat].push({ name: s.name, level: s.percentage });
+    });
+
+    const categoryKeys = Object.keys(categoriesMap);
+    if (categoryKeys.length === 0) return TECH_CATEGORIES;
+
+    const metaInfo: Record<string, { icon: React.ComponentType<{ className?: string }>; color: string; gradient: string }> = {
+      frontend: { icon: Code2, color: 'text-blue-500', gradient: 'from-blue-500/20 to-cyan-500/20' },
+      backend: { icon: Database, color: 'text-purple-500', gradient: 'from-purple-500/20 to-pink-500/20' },
+      'ai/ml': { icon: Brain, color: 'text-emerald-500', gradient: 'from-emerald-500/20 to-teal-500/20' },
+      mobile: { icon: Smartphone, color: 'text-amber-500', gradient: 'from-amber-500/20 to-orange-500/20' },
+      cloud: { icon: Cloud, color: 'text-sky-500', gradient: 'from-sky-500/20 to-indigo-500/20' },
+      devops: { icon: Workflow, color: 'text-orange-500', gradient: 'from-orange-500/20 to-amber-500/20' },
+      databases: { icon: Database, color: 'text-cyan-500', gradient: 'from-cyan-500/20 to-blue-500/20' },
+    };
+
+    return categoryKeys.map((catKey) => {
+      const lower = catKey.toLowerCase();
+      const meta =
+        metaInfo[lower] ||
+        (lower.includes('front')
+          ? metaInfo.frontend
+          : lower.includes('back')
+          ? metaInfo.backend
+          : lower.includes('ai') || lower.includes('ml')
+          ? metaInfo['ai/ml']
+          : lower.includes('mobile') || lower.includes('app')
+          ? metaInfo.mobile
+          : lower.includes('cloud') || lower.includes('devops')
+          ? metaInfo.devops
+          : { icon: Code2, color: 'text-blue-500', gradient: 'from-blue-500/20 to-cyan-500/20' });
+
+      return {
+        name: catKey,
+        icon: meta.icon,
+        color: meta.color,
+        gradient: meta.gradient,
+        skills: categoriesMap[catKey].slice(0, 5),
+      };
+    });
+  }, [skills]);
+
+  // Dynamic Journey Timeline derived from live Supabase Experiences
+  const dynamicJourneyTimeline: TimelineItem[] = useMemo(() => {
+    if (!experiences || experiences.length === 0) return JOURNEY_TIMELINE;
+
+    const colors = [
+      'from-blue-500 to-cyan-500',
+      'from-purple-500 to-pink-500',
+      'from-emerald-500 to-teal-500',
+      'from-orange-500 to-amber-500',
+      'from-indigo-500 to-violet-500',
+    ];
+
+    return experiences.slice(0, 6).map((exp, i) => ({
+      year: exp.period || '2024 — Present',
+      title: `${exp.title} • ${exp.company_or_school}`,
+      description:
+        exp.description ||
+        (exp.achievements && exp.achievements.length > 0 ? exp.achievements.join(' ') : 'Engineering production systems.'),
+      icon: exp.type === 'education' ? GraduationCap : Rocket,
+      color: colors[i % colors.length],
+    }));
+  }, [experiences]);
 
   // Delay expensive 3D mounting until the primary layout has painted.
   // On a low-power phone it still appears, but after a small idle window.
