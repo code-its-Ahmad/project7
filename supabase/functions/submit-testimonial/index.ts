@@ -17,6 +17,7 @@ Deno.serve(async (req) => {
     const role = clean(payload.role, 100);
     const company = clean(payload.company, 120);
     const projectName = clean(payload.project_name, 150);
+    const avatar = clean(payload.avatar, 2000);
     const ratingRaw = Number(payload.rating);
     const rating = Number.isFinite(ratingRaw) ? Math.min(5, Math.max(1, Math.round(ratingRaw))) : 5;
 
@@ -41,6 +42,7 @@ Deno.serve(async (req) => {
         company,
         text,
         rating,
+        avatar: avatar || null,
         project_name: projectName || null,
         status: 'pending',
         is_featured: false,
