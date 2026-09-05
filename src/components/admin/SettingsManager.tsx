@@ -103,7 +103,7 @@ const SettingsManager: React.FC = () => {
       setFormData((prev) => ({ ...prev, resume_url: res.url }));
       toast.success('Resume PDF uploaded and linked!');
     } catch (err: any) {
-      toast.error(err?.response?.data?.error || 'Failed to upload resume.');
+      toast.error(err?.message || 'Failed to upload resume.');
     } finally {
       setIsUploadingResume(false);
     }
@@ -119,7 +119,7 @@ const SettingsManager: React.FC = () => {
       setFormData((prev) => ({ ...prev, avatar_url: res.url }));
       toast.success('Avatar image uploaded!');
     } catch (err: any) {
-      toast.error(err?.response?.data?.error || 'Failed to upload avatar image.');
+      toast.error(err?.message || 'Failed to upload avatar image.');
     } finally {
       setIsUploadingAvatar(false);
     }
@@ -144,7 +144,7 @@ const SettingsManager: React.FC = () => {
       setNewPassword('');
       setConfirmPassword('');
     } catch (err: any) {
-      toast.error(err?.response?.data?.error || 'Failed to change password.');
+      toast.error(err?.message || 'Failed to change password.');
     }
   };
 
